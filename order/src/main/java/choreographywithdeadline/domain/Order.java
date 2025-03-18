@@ -33,6 +33,19 @@ public class Order {
 
     private String status;
 
+    @PrePersist
+    public void onPrePersist(){
+        setStatus("PENDING");
+    }
+
+    @PostPersist
+    public void onPostPersist(){
+        OrderCreated orderCreated = new OrderCreated(this);
+        orderCreated.publishAfterCommit();
+    }
+
+
+
     public static OrderRepository repository() {
         OrderRepository orderRepository = OrderApplication.applicationContext.getBean(
             OrderRepository.class
@@ -44,24 +57,23 @@ public class Order {
     public static void approve(StockDecreased stockDecreased) {
         //implement business logic here:
 
-        /** Example 1:  new item 
-        Order order = new Order();
-        repository().save(order);
-
-        */
-
-        /** Example 2:  finding and process
         
 
-        repository().findById(stockDecreased.get???()).ifPresent(order->{
+
+        
+
+        repository().findById(
+            Long.valueOf(stockDecreased.getOrderId())
+            ).ifPresent(order->{
             
-            order // do something
+            order.setStatus("APPROVED"); // do something
             repository().save(order);
+
+            OrderPlaced orderPlaced = new OrderPlaced(order);
+            orderPlaced.publishAfterCommit();
 
 
          });
-        */
-
     }
 
     //>>> Clean Arch / Port Method
@@ -85,7 +97,7 @@ public class Order {
 
 
          });
-        */
+        
 
     }
 
@@ -124,19 +136,14 @@ public class Order {
         repository().save(order);
 
         */
-
-        /** Example 2:  finding and process
-        
-
-        repository().findById(deadlineReached.get???()).ifPresent(order->{
+        repository().findById(deadlineReached.getOrderId()).ifPresent(order->{
             
-            order // do something
+            order.setStatus("REJECTED"); // do something
             repository().save(order);
 
+            new OrderRejected(order).publishAfterCommit();
 
          });
-        */
-
     }
     //>>> Clean Arch / Port Method
 
